@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
+        <link href="styles.css" rel="stylesheet">
+        <title>Trivia!</title>
+
+        <script>
+            // Can not apply style to .mcq it returns an undefined object, apply css on each element separately.
+            function resetColor() {
+                document.querySelectorAll(".mcq").forEach(el => el.style.backgroundColor = "#d9edff");
+                document.querySelectorAll(".mcq").forEach(el => el.style.color = "black");
+            }
+            // TODO: Add code to check answers to questions
+            function check(id)
+            {
+                let error_message = document.getElementById("error_message");
+                if (id === "three")
+                {
+                    resetColor();
+                    error_message.innerHTML = "Correct!";
+                    document.getElementById(id).style.backgroundColor = "#00D100";
+                    document.getElementById(id).style.color = "white";
+
+                }
+                else
+                {
+                    resetColor();
+                    error_message.innerHTML = "Incorrect!";
+                    document.getElementById(id).style.backgroundColor = "#FF3232";
+                    document.getElementById(id).style.color = "white";
+                }
+            }
+
+            function check2() {
+                let answer2 = document.getElementById("answer2").value;
+                if (answer2.toLowerCase() === "sakura") {
+                    error_message_2.innerHTML = "Correct!";
+                    document.getElementById("answer2").style.backgroundColor = "#00D100";
+                    document.getElementById("answer2").style.color = "white";
+                }
+                else {
+                    error_message_2.innerHTML = "Incorrect!";
+                    document.getElementById("answer2").style.backgroundColor = "#FF3232";
+                    document.getElementById("answer2").style.color = "white";
+                }
+            }
+        </script>
+
+    </head>
+    <body>
+
+        <div class="jumbotron">
+            <h1>Trivia!</h1>
+        </div>
+        <div class="container">
+            <div class="section">
+                <!-- TODO: Add multiple choice question here -->
+
+                <h2>Part 1: Multiple Choice </h2><br>
+                <hr>
+                <h3>Name the village where the Great Shinobi, named Naruto, lived: </h3>
+                    <button onclick = "check(this.id)" class = "mcq" id="one" type="button" value="okay">
+                        Kumogakure
+                    </button>
+                    <button onclick = "check(this.id)" class = "mcq" id="two" type="button" value="good">
+                        Iwagakure
+                    </button>
+                    <button onclick = "check(this.id)" class = "mcq" id="three" type="button" value="best">
+                        Konohagakure
+                    </button>
+                    <p id="error_message"></p>
+            </div>
+
+            <div class="section">
+                <h2>Part 2: Free Response</h2>
+                <hr>
+
+                <!-- TODO: Add free response question here -->
+                <h3>Who is the most hated character in Naruto?</h3>
+
+                <label for="answer2">Your Answer:</label>
+                <input type="text" id="answer2" name="answer2"><br><br>
+
+                <button onclick = "check2()" id="answer2submit" type="button" value="answer2submit">
+                    Confirm
+                </button>
+                <p id="error_message_2"></p>
+
+            </div>
+        </div>
+    </body>
+</html>

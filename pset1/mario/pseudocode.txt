@@ -1,0 +1,13 @@
+Input (no. of rows): Height entered by the user (limit: 1-8)
+Output: Pyramid of no of rows with each row containing i no of hashes
+
+Ask for height of the pyramid
+If height is between 1 and 8:
+    loop:
+        for(rows = n; rows > 0; row--)
+            for(col = 0; col < row; col++)
+                if(int k = col-row)
+                    print #
+else:
+    Ask for height of the pyramid again.
+
