@@ -9,6 +9,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required, lookup, usd
 
+from datetime import datetime
+
 # Configure application
 app = Flask(__name__)
 
@@ -53,8 +55,40 @@ def index():
 @login_required
 def buy():
     """Buy shares of stock"""
-    return apology("TODO")
+    if request.method == "POST":
+        # Ensure symbol was submitted
+        if not request.form.get("symbol"):
+            return apology("must provide symbol", 403)
 
+        # Ensure symbol was valid
+        symbol_request = lookup(request.form.get("symbol"))
+        if not symbol_request["symbol"]:
+            return apology("symbol not valid", 403)
+
+        # Ensure shares were submitted
+        if not request.form.get("shares"):
+            return apology("Invalid Shares!", 403)
+
+        # Ensure shares were valid
+        if not int(request.form.get("shares")) > 0:
+            return apology("Invalid Shares!", 403)
+
+        symbol = request.form.get("symbol")
+        shares = request.form.get("shares")
+
+        ## Get current share price and user's available cash
+        current_price_query = lookup(request.form.get("symbol"))
+        current_price = current_price_query["price"]
+
+        current_cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])
+
+        if current_cash >= current_price:
+            db.execute("INSERT INTO transactions(user_id, transaction_type, symbol, price, shares_quantity, Timestamp) VALUES (?,?,?,?,?,?)", session["user_id"], "buy", symbol, current_price, shares, datetime.today().isoformat())
+
+        return render_template("index.html")
+
+    else:
+        return render_template("buy.html")
 
 @app.route("/history")
 @login_required
