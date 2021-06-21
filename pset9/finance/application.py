@@ -48,7 +48,27 @@ if not os.environ.get("API_KEY"):
 @login_required
 def index():
     """Show portfolio of stocks"""
-    return apology("TODO")
+
+    trans_list = []
+    trans_dict = {}
+    transactions = db.execute("SELECT * FROM transactions WHERE user_id = ?", session["user_id"])
+    current_cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])
+    cash = current_cash[0]["cash"]
+
+    for transaction in transactions:
+        value = transaction["shares_quantity"] * transaction["price"]
+        shares = transaction["shares_quantity"]
+        price = transaction["price"]
+        symbol = transaction["symbol"]
+
+        trans_dict["value"] = value
+        trans_dict["shares_quantity"] = shares
+        trans_dict["price"] = price
+        trans_dict["symbol"] = symbol
+
+        trans_list.append(trans_dict.copy()) # always append a copy of the list i.e. list[:] ad dict i.e. dict.copy(), otherwise you get repeating same entries
+
+    return render_template("index.html", trans_list = trans_list, cash = cash)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -74,18 +94,25 @@ def buy():
             return apology("Invalid Shares!", 403)
 
         symbol = request.form.get("symbol")
-        shares = request.form.get("shares")
+        shares = int(request.form.get("shares"))
 
         ## Get current share price and user's available cash
         current_price_query = lookup(request.form.get("symbol"))
         current_price = current_price_query["price"]
 
+        purchase_total = current_price * shares
+
         current_cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])
 
-        if current_cash >= current_price:
+        if current_cash[0]["cash"] < purchase_total:
+            return apology("Sorry, you do not have enough balance!", 403)
+
+        if current_cash[0]["cash"] >= purchase_total:
+            updated_cash = current_cash[0]["cash"] - purchase_total
+            db.execute("UPDATE users SET cash = ? WHERE id = ?", updated_cash, session["user_id"])
             db.execute("INSERT INTO transactions(user_id, transaction_type, symbol, price, shares_quantity, Timestamp) VALUES (?,?,?,?,?,?)", session["user_id"], "buy", symbol, current_price, shares, datetime.today().isoformat())
 
-        return render_template("index.html")
+            return render_template("index.html")
 
     else:
         return render_template("buy.html")

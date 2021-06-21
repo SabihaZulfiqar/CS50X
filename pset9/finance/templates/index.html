@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Index
+{% endblock %}
+
+{% block main %}
+    <table>
+        <thead>
+            <tr>
+                <th>Stock Symbol</th>
+                <th>Current Shares</th>
+                <th>Current Price</th>
+                <th>Current Value</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {% for transaction in trans_list %}
+
+                <tr>
+                    <td> {{ transaction.symbol }} </td>
+                    <td> {{ transaction.shares_quantity }} </td>
+                    <td> {{ transaction.price }} </td>
+                    <td> {{ transaction.value }} </td>
+                </tr>
+
+            {% endfor %}
+
+            <tr>
+                <td> Your current balance: {{ cash }}</td>
+            </tr>
+
+        </tbody>
+    </table>
+{% endblock %}
