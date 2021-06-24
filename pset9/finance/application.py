@@ -53,7 +53,8 @@ def index():
     trans_dict = {}
     transactions = db.execute("SELECT * FROM transactions WHERE user_id = ?", session["user_id"])
     current_cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])
-    cash = current_cash[0]["cash"]
+    cash = round(current_cash[0]["cash"], 2)
+    grand_total = cash
 
     for transaction in transactions:
         value = transaction["shares_quantity"] * transaction["price"]
@@ -63,12 +64,13 @@ def index():
 
         trans_dict["value"] = value
         trans_dict["shares_quantity"] = shares
-        trans_dict["price"] = price
+        trans_dict["price"] = lookup(symbol)["price"]
         trans_dict["symbol"] = symbol
 
         trans_list.append(trans_dict.copy()) # always append a copy of the list i.e. list[:] ad dict i.e. dict.copy(), otherwise you get repeating same entries
 
-    return render_template("index.html", trans_list = trans_list, cash = cash)
+        grand_total += value
+    return render_template("index.html", trans_list = trans_list, cash = cash, grand_total = grand_total)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -215,8 +217,26 @@ def register():
 @app.route("/sell", methods=["GET", "POST"])
 @login_required
 def sell():
+
     """Sell shares of stock"""
-    return apology("TODO")
+
+    stocks = []
+
+    if request.method == "POST":
+        return apology("TODO SELL POST", 403)
+    else:
+        # Selecting all entries where user_id is current user
+        available_stocks = db.execute("SELECT symbol FROM transactions WHERE user_id = ?", session["user_id"])
+
+        # for each row received, get only the symbol attribute value and save in a list
+        for stock in available_stocks:
+            stocks.append(stock["symbol"])
+
+        # remove duplicates from the list to get a list of owned stocks
+        available_stocks = list(dict.fromkeys(stocks))        # Turning a list into a dictionary keys eliminates duplicates as keys can not repeat, turn back into list to remove duplicates
+        print (available_stocks)
+        # send stocks to template for display in select option
+        return render_template("sell.html", available_stocks = available_stocks)
 
 
 def errorhandler(e):
