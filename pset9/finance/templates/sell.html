@@ -8,9 +8,10 @@
     <form action="/sell" method="post">
         <div class="form-group">
             <select name="shares">
-                { % for available_stock in available_stocks % }
-                    <option value="{{ available_stock }}"> {{ available_stock }} </option>
-                { % endfor % }
+                <option disabled selected value="symbol">Symbol</option>
+                {% for stock in send_stocks %}
+                    <option value="{{stock}}"> {{stock}} </option>
+                {% endfor %}
             </select>
         </div>
         <div class="form-group">

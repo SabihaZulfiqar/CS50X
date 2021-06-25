@@ -235,8 +235,11 @@ def sell():
         # remove duplicates from the list to get a list of owned stocks
         available_stocks = list(dict.fromkeys(stocks))        # Turning a list into a dictionary keys eliminates duplicates as keys can not repeat, turn back into list to remove duplicates
         print (available_stocks)
+
+        send_stocks = dict.fromkeys(available_stocks, "owned")
+        print (send_stocks)
         # send stocks to template for display in select option
-        return render_template("sell.html", available_stocks = available_stocks)
+        return render_template("sell.html", send_stocks = send_stocks, i = 0)
 
 
 def errorhandler(e):
