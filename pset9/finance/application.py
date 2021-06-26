@@ -220,11 +220,36 @@ def sell():
 
     """Sell shares of stock"""
 
-    stocks = []
+
 
     if request.method == "POST":
-        return apology("TODO SELL POST", 403)
+
+
+
+        # Ensure stocks was submitted
+        if not request.form.get("symbol"):
+            print(request.form.get("symbol"))
+            return apology("must provide symbol", 403)
+
+        # Ensure shares was submitted
+        elif not request.form.get("shares"):
+            return apology("must provide shares", 403)
+
+        symbol = request.form.get("symbol")
+        shares = request.form.get("shares")
+
+
+        # Get count (shares) minus any sell transactions => where user id is session user id and symbol is symbol
+        # Ensure shares are positive and available
+        # Update transactions with sell operation with symbol and shares with a negative sign
+
+        query = db.execute("SELECT COUNT(shares_quantity) FROM transactions WHERE user_id = ? AND symbol = ?", session["user_id"], symbol)
+        print(query)
+
     else:
+
+        stocks = []
+
         # Selecting all entries where user_id is current user
         available_stocks = db.execute("SELECT symbol FROM transactions WHERE user_id = ?", session["user_id"])
 
@@ -234,10 +259,9 @@ def sell():
 
         # remove duplicates from the list to get a list of owned stocks
         available_stocks = list(dict.fromkeys(stocks))        # Turning a list into a dictionary keys eliminates duplicates as keys can not repeat, turn back into list to remove duplicates
-        print (available_stocks)
 
         send_stocks = dict.fromkeys(available_stocks, "owned")
-        print (send_stocks)
+
         # send stocks to template for display in select option
         return render_template("sell.html", send_stocks = send_stocks, i = 0)
 

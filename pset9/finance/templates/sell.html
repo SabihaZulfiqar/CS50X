@@ -7,7 +7,7 @@
 {% block main %}
     <form action="/sell" method="post">
         <div class="form-group">
-            <select name="shares">
+            <select name="symbol">
                 <option disabled selected value="symbol">Symbol</option>
                 {% for stock in send_stocks %}
                     <option value="{{stock}}"> {{stock}} </option>
