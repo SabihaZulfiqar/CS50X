@@ -219,13 +219,7 @@ def register():
 def sell():
 
     """Sell shares of stock"""
-
-
-
     if request.method == "POST":
-
-
-
         # Ensure stocks was submitted
         if not request.form.get("symbol"):
             print(request.form.get("symbol"))
@@ -236,16 +230,42 @@ def sell():
             return apology("must provide shares", 403)
 
         symbol = request.form.get("symbol")
-        shares = request.form.get("shares")
+        shares = int(request.form.get("shares"))
 
 
         # Get count (shares) minus any sell transactions => where user id is session user id and symbol is symbol
         # Ensure shares are positive and available
         # Update transactions with sell operation with symbol and shares with a negative sign
 
-        query = db.execute("SELECT COUNT(shares_quantity) FROM transactions WHERE user_id = ? AND symbol = ?", session["user_id"], symbol)
-        print(query)
+        sum_of_bought_shares = db.execute("SELECT SUM(shares_quantity) FROM transactions WHERE user_id = ? AND transaction_type = 'buy' AND symbol = ?", session["user_id"], symbol)[0]["SUM(shares_quantity)"]
+        sum_of_sold_shares = db.execute("SELECT SUM(shares_quantity) FROM transactions WHERE user_id = ? AND transaction_type = 'sell' AND symbol = ?", session["user_id"], symbol)[0]["SUM(shares_quantity)"]
+        print(sum_of_bought_shares,sum_of_sold_shares)
 
+        if sum_of_bought_shares is None:
+            sum_of_bought_shares = 0
+        if sum_of_sold_shares is None:
+            sum_of_sold_shares = 0
+
+        sum_of_available_shares = sum_of_bought_shares - sum_of_sold_shares
+
+        if sum_of_available_shares >= shares:
+            sum_of_available_shares -= shares
+
+            current_price_query = lookup(request.form.get("symbol"))
+            current_price = current_price_query["price"]
+
+            insertion = db.execute("INSERT INTO transactions(user_id, transaction_type, symbol, price, shares_quantity, Timestamp) VALUES (?,?,?,?,?,?)", session["user_id"], "sell", symbol, current_price, (-1 * shares), datetime.today().isoformat())
+            print(insertion)
+
+            if insertion > 0:
+                current_cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])[0]["cash"]
+                print(current_cash)
+                current_cash = current_cash + (current_price * shares)
+                db.execute("UPDATE users SET cash = ? WHERE id = ?", current_cash, session["user_id"])
+            else:
+                return apology("Database Update Failed", 403)
+
+            return render_template("index.html")
     else:
 
         stocks = []
