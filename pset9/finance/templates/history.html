@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Index
+    History
 {% endblock %}
 
 {% block main %}
@@ -11,28 +11,23 @@
                 <th>Stock Symbol</th>
                 <th>Current Shares</th>
                 <th>Current Price</th>
-                <th>Current Value</th>
+                <th>Transaction Type</th>
+                <th>Transaction Time</th>
             </tr>
         </thead>
         <tbody>
 
-            {% for transaction in trans_list %}
+            {% for transaction in transaction_history %}
 
                 <tr>
                     <td> {{ transaction.symbol }} </td>
                     <td> {{ transaction.shares_quantity }} </td>
                     <td> {{ transaction.price | usd }} </td>
-                    <td> {{ transaction.value | usd }} </td>
+                    <td> {{ transaction.transaction_type }} </td>
+                    <td> {{ transaction.Timestamp }} </td>
                 </tr>
 
             {% endfor %}
-
-            <tr>
-                <td> Your current balance: {{ cash | usd }}</td>
-            </tr>
-            <tr>
-                <td> Your grand total: {{ grand_total | usd }}</td>
-            </tr>
 
         </tbody>
     </table>

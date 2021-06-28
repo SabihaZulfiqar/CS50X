@@ -66,11 +66,11 @@ def index():
         trans_dict["shares_quantity"] = shares
         trans_dict["price"] = lookup(symbol)["price"]
         trans_dict["symbol"] = symbol
-
-        trans_list.append(trans_dict.copy()) # always append a copy of the list i.e. list[:] ad dict i.e. dict.copy(), otherwise you get repeating same entries
+        # always append a copy of the list i.e. list[:] ad dict i.e. dict.copy(), otherwise you get repeating same entries
+        trans_list.append(trans_dict.copy())
 
         grand_total += value
-    return render_template("index.html", trans_list = trans_list, cash = cash, grand_total = grand_total)
+    return render_template("index.html", trans_list=trans_list, cash=cash, grand_total=grand_total)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -84,21 +84,29 @@ def buy():
 
         # Ensure symbol was valid
         symbol_request = lookup(request.form.get("symbol"))
-        if not symbol_request["symbol"]:
-            return apology("symbol not valid", 403)
+        if not symbol_request:
+            return apology("symbol not valid", 400)
 
         # Ensure shares were submitted
         if not request.form.get("shares"):
             return apology("Invalid Shares!", 403)
 
         # Ensure shares were valid
-        if not int(request.form.get("shares")) > 0:
-            return apology("Invalid Shares!", 403)
+        # if not int(request.form.get("shares")) > 0:
+        #   return apology("Invalid Shares!", 403)
+
+        shares = request.form.get("shares")
+        try:
+            shares = int(shares)
+            if shares < 0:
+                return apology("Shares can not be negative!", 400)
+        except ValueError:
+            return apology("Invalid Format!", 400)
 
         symbol = request.form.get("symbol")
         shares = int(request.form.get("shares"))
 
-        ## Get current share price and user's available cash
+        # Get current share price and user's available cash
         current_price_query = lookup(request.form.get("symbol"))
         current_price = current_price_query["price"]
 
@@ -112,18 +120,21 @@ def buy():
         if current_cash[0]["cash"] >= purchase_total:
             updated_cash = current_cash[0]["cash"] - purchase_total
             db.execute("UPDATE users SET cash = ? WHERE id = ?", updated_cash, session["user_id"])
-            db.execute("INSERT INTO transactions(user_id, transaction_type, symbol, price, shares_quantity, Timestamp) VALUES (?,?,?,?,?,?)", session["user_id"], "buy", symbol, current_price, shares, datetime.today().isoformat())
+            db.execute("INSERT INTO transactions(user_id, transaction_type, symbol, price, shares_quantity, Timestamp) VALUES (?,?,?,?,?,?)",
+                       session["user_id"], "buy", symbol, current_price, shares, datetime.today().isoformat())
 
-            return render_template("index.html")
+            return index()
 
     else:
         return render_template("buy.html")
+
 
 @app.route("/history")
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
+    transaction_history = db.execute("SELECT * FROM transactions WHERE user_id = ? ORDER BY Timestamp DESC", session["user_id"])
+    return render_template("history.html", transaction_history=transaction_history)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -178,9 +189,18 @@ def logout():
 def quote():
     """Get stock quote."""
     if request.method == "POST":
+
+        # Ensure symbol is provided
+        if not request.form.get("symbol"):
+            return apology("Did not provide symbol", 400)
+
+        # Ensure valid symbol
         quoted_value = lookup(request.form.get("symbol"))
-        quoted_value = quoted_value["price"]
-        return render_template("quoted.html", quoted_value = quoted_value)
+        if not quoted_value:
+            return apology("Symbol does not exist", 400)
+        else:
+            quoted_value = quoted_value["price"]
+            return render_template("quoted.html", quoted_value=quoted_value)
     else:
         return render_template("quote.html")
 
@@ -196,18 +216,25 @@ def register():
 
         # Ensure username was submitted
         if not request.form.get("username"):
-            return apology("must provide username", 403)
+            return apology("must provide username", 400)
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            return apology("must provide password", 403)
+            return apology("must provide password", 400)
 
         # Ensure passwords match
         elif request.form.get("password") != request.form.get("confirmation"):
-            return apology("passwords don't match", 403)
+            return apology("passwords don't match", 400)
+
+        # Ensure name is not duplicate
+        username_for_registration = request.form.get("username")
+        name_in_database = db.execute("SELECT * FROM users WHERE username = ?", username_for_registration)
+        if name_in_database:
+            return apology("Username already exists!", 400)
 
         # Save user to database
-        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", request.form.get("username"), generate_password_hash(request.form.get("password")))
+        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", request.form.get(
+            "username"), generate_password_hash(request.form.get("password")))
         return redirect("/")
 
     else:
@@ -217,7 +244,6 @@ def register():
 @app.route("/sell", methods=["GET", "POST"])
 @login_required
 def sell():
-
     """Sell shares of stock"""
     if request.method == "POST":
         # Ensure stocks was submitted
@@ -232,14 +258,15 @@ def sell():
         symbol = request.form.get("symbol")
         shares = int(request.form.get("shares"))
 
-
         # Get count (shares) minus any sell transactions => where user id is session user id and symbol is symbol
         # Ensure shares are positive and available
         # Update transactions with sell operation with symbol and shares with a negative sign
 
-        sum_of_bought_shares = db.execute("SELECT SUM(shares_quantity) FROM transactions WHERE user_id = ? AND transaction_type = 'buy' AND symbol = ?", session["user_id"], symbol)[0]["SUM(shares_quantity)"]
-        sum_of_sold_shares = db.execute("SELECT SUM(shares_quantity) FROM transactions WHERE user_id = ? AND transaction_type = 'sell' AND symbol = ?", session["user_id"], symbol)[0]["SUM(shares_quantity)"]
-        print(sum_of_bought_shares,sum_of_sold_shares)
+        sum_of_bought_shares = db.execute(
+            "SELECT SUM(shares_quantity) FROM transactions WHERE user_id = ? AND transaction_type = 'buy' AND symbol = ?", session["user_id"], symbol)[0]["SUM(shares_quantity)"]
+        sum_of_sold_shares = db.execute(
+            "SELECT SUM(shares_quantity) FROM transactions WHERE user_id = ? AND transaction_type = 'sell' AND symbol = ?", session["user_id"], symbol)[0]["SUM(shares_quantity)"]
+        print(sum_of_bought_shares, sum_of_sold_shares)
 
         if sum_of_bought_shares is None:
             sum_of_bought_shares = 0
@@ -254,7 +281,8 @@ def sell():
             current_price_query = lookup(request.form.get("symbol"))
             current_price = current_price_query["price"]
 
-            insertion = db.execute("INSERT INTO transactions(user_id, transaction_type, symbol, price, shares_quantity, Timestamp) VALUES (?,?,?,?,?,?)", session["user_id"], "sell", symbol, current_price, (-1 * shares), datetime.today().isoformat())
+            insertion = db.execute("INSERT INTO transactions(user_id, transaction_type, symbol, price, shares_quantity, Timestamp) VALUES (?,?,?,?,?,?)",
+                                   session["user_id"], "sell", symbol, current_price, (-1 * shares), datetime.today().isoformat())
             print(insertion)
 
             if insertion > 0:
@@ -264,8 +292,10 @@ def sell():
                 db.execute("UPDATE users SET cash = ? WHERE id = ?", current_cash, session["user_id"])
             else:
                 return apology("Database Update Failed", 403)
+        else:
+            return apology("Invalid Shares!", 400)
 
-            return render_template("index.html")
+        return index()  # Whenever I used render_template("index.html") it would result in some kind of format error, probably with the cash value converted to usd in index.html => using index() solves it
     else:
 
         stocks = []
@@ -278,12 +308,13 @@ def sell():
             stocks.append(stock["symbol"])
 
         # remove duplicates from the list to get a list of owned stocks
-        available_stocks = list(dict.fromkeys(stocks))        # Turning a list into a dictionary keys eliminates duplicates as keys can not repeat, turn back into list to remove duplicates
+        # Turning a list into a dictionary keys eliminates duplicates as keys can not repeat, turn back into list to remove duplicates
+        available_stocks = list(dict.fromkeys(stocks))
 
         send_stocks = dict.fromkeys(available_stocks, "owned")
 
         # send stocks to template for display in select option
-        return render_template("sell.html", send_stocks = send_stocks, i = 0)
+        return render_template("sell.html", send_stocks=send_stocks, i=0)
 
 
 def errorhandler(e):
